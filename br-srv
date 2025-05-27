@@ -80,7 +80,7 @@ ssh-keygen -t rsa
 ssh-copy-id -p 2025 sshuser@hq-srv.au-team.irpo
 ssh-copy-id root@hq-cli.au-team.irpo
 
-/etc/ssh_config
+/etc/ssh/ssh_config
     KexAlgorithms +diffie-hellman-group14-sha1
     HostKeyAlgorithms +ssh-rsa
 
