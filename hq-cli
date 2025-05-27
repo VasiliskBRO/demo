@@ -33,6 +33,14 @@ systemctl enable zabbix-agent
 Зайти на сайт http://mon.au-team.irpo/zabbix и настроить забикс
 Также зайти на сайт http://moodle.au-team.irpo/moodle и настроить там moodle 
 
+apt install ssh
+systemctl enable ssh
+
+/etc/ssh/sshd_config
+PermitRootLogin yes
+
+systemctl restart ssh
+
 sudo apt install winbind libpam-winbind libnss-winbind krb5-config samba-dsdb-modules samba-vfs-modules -y
 
 mv /etc/samba/smb.conf /etc/samba/smb.conf.org
@@ -61,14 +69,6 @@ wbinfo -g
 /etc/sudoers.d/hq
 %hq ALL=(ALL) NOPASSWD: /bin/cat, /bin/grep, /usr/bin/id
 admin ALL=(ALL) NOPASSWD: ALL
-
-apt install ssh
-systemctl enable ssh
-
-/etc/ssh/sshd_config
-PermitRootLogin yes
-
-systemctl restart ssh
 
 apt install nfs-common -y
 mkdir /mnt/nfs
