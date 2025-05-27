@@ -196,6 +196,11 @@ tar -xvzf moodle-latest-405.tgz
 chown -R www-data:www-data /var/www
 chmod -R 755 /var/www
 
+/etc/php/8.2/apache2/php.ini
+max_input_vars = 5000
+
+reboot
+
 wget https://repo.zabbix.com/zabbix/7.2/release/debian/pool/main/z/zabbix-release/zabbix-release_latest+debian12_all.deb
 dpkg -i zabbix-release_latest+debian12_all.deb 
 apt update 
