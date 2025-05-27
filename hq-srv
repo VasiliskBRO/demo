@@ -1,0 +1,260 @@
+/etc/network/interfaces
+auto ens192
+iface ens192 inet static
+address 10.1.1.2
+netmask 255.255.255.0
+gateway 10.1.1.1
+metric 0
+
+/etc/resolv.conf
+nameserver	8.8.8.8
+
+dpkg-reconfigure tzdata - Asia/Yekaterinburg
+
+useradd -m -u 1010 -s /bin/bash sshuser
+passwd sshuser - P@ssw0rd
+
+apt install sudo -y
+
+/etc/sudoers
+sshuser ALL=(ALL) NOPASSWD: ALL
+
+apt install ssh -y
+
+/etc/ssh/ssh_config
+Port 2025
+AllowUsers sshuser
+MaxAuthTries 2
+Banner /etc/issue.net
+
+/etc/issue.net
+Authorized access only
+
+systemctl restart ssh
+
+apt install bind9 dnsutils -y
+
+/etc/bind/named.conf.options
+
+	 forwarders {
+	 	8.8.8.8;
+	 };
+
+	dnssec-validation auto;
+	recursion yes;
+	listen-on { any; };
+	allow-query { any; };
+
+/etc/bind/named.conf.default-zones
+zone "au-team.irpo" {
+	type master;
+	file "/etc/bind/au-team.irpo";
+};
+
+zone "11.10.1.in-addr.arpa" {
+	type master;
+	file "/etc/bind/11.10.1";
+};
+
+zone "12.20.1.in-addr.arpa" {
+	type master;
+	file "/etc/bind/12.20.1";
+};
+
+zone "21.168.192.in-addr.arpa" {
+	type master;
+	file "/etc/bind/21.168.192";
+};
+
+/etc/bind/au-team.irpo
+;
+; BIND data file for local loopback interface
+;
+$TTL	604800
+@	IN	SOA	au-team.irpo. root.au-team.irpo. (
+			      2		; Serial
+			 604800		; Refresh
+			  86400		; Retry
+			2419200		; Expire
+			 604800 )	; Negative Cache TTL
+;
+@	IN	NS	br-srv.au-team.irpo.
+@	IN	A	5.5.5.2
+hq-srv	IN	A	10.1.1.2
+hq-cli	IN	A	20.1.1.2
+hq-rtr	IN	A	10.1.1.1
+hq-rtr	IN	A	20.1.1.1
+br-rtr	IN	A	5.5.5.1
+br-srv	IN	A	5.5.5.2
+moodle	IN	A	10.1.1.2
+mon	IN	A	10.1.1.2
+wiki	IN	A	5.5.5.2
+
+/etc/bind/11.10.1
+;
+; BIND reverse data file for local loopback interface
+;
+$TTL	604800
+@	IN	SOA	au-team.irpo. root.au-team.irpo. (
+			      1		; Serial
+			 604800		; Refresh
+			  86400		; Retry
+			2419200		; Expire
+			 604800 )	; Negative Cache TTL
+;
+@	IN	NS	br-srv.au-team.irpo.
+1	IN	PTR	hq-srv.au-team.irpo.
+61	IN	PTR	hq-rtr.au-team.irpo.
+
+/etc/bind/12.20.1
+;
+; BIND reverse data file for local loopback interface
+;
+$TTL	604800
+@	IN	SOA	au-team.irpo. root.au-team.irpo. (
+			      1		; Serial
+			 604800		; Refresh
+			  86400		; Retry
+			2419200		; Expire
+			 604800 )	; Negative Cache TTL
+;
+@	IN	NS	br-srv.au-team.irpo.
+1	IN	PTR	hq-cli.au-team.irpo.
+14	IN	PTR	hq-rtr.au-team.irpo.
+1	IN	PTR	moodle.au-team.irpo.
+
+/etc/bind/21.168.192
+;
+; BIND reverse data file for local loopback interface
+;
+$TTL	604800
+@	IN	SOA	au-team.irpo. root.au-team.irpo. (
+			      1		; Serial
+			 604800		; Refresh
+			  86400		; Retry
+			2419200		; Expire
+			 604800 )	; Negative Cache TTL
+;
+@	IN	NS	br-srv.au-team.irpo.
+1	IN	PTR	br-srv.au-team.irpo.
+30	IN	PTR	br-rtr.au-team.irpo.
+1	IN	PTR	wiki.au-team.irpo.
+
+systemctl restart bind9
+systemctl status bind9
+
+/etc/resolv.conf
+nameserver	10.1.1.2
+
+apt install mdadm -y
+lsblk
+mdadm --create --verbose /dev/md0 --level=5 --raid-devices=3 /dev/sdb /dev/sdc /dev/sdd
+mdadm --detains --scan | tee -a /etc/mdadm/mdadm.conf
+update-initramfs -u
+mkfs.ext4 -F /dev/md0
+mkdir /raid5
+mount /dev/md0 /raid5
+
+/etc/fstab
+/dev/md0 /raid5 ext4 defaults 0 0
+reboot
+df -h
+
+apt install nfs-kernel-server -y
+mkdir /raid5/nfs
+chown nobody:nogroup /raid5/nfs/
+chmod 777 /raid5/nfs/
+
+/etc/exports
+/raid5/nfs 20.1.1.0/24(rw,sync,no_subtree_check)
+
+exportfs -ra
+systemctl restart nfs-kernel-server
+systemctl status nfs-kernel-server
+
+apt install chrony -y
+
+/etc/chrony/chrony.conf 
+local stratum 5
+allow 0.0.0.0/0
+manual
+
+systemctl restart chrony
+
+apt install apache2 php libapache2-mod-php php-mysql php-xml php-gd php-zip php-intl php-curl php-mbstring mariadb-server -y
+
+mysql
+create database moodledb character set utf8mb4 collate utf8mb5_unicode_ci;
+create user 'moodle'@'localhost' identified by 'toor';
+grant all privileges on moodledb.* to 'moodle'@'localhost';
+flush privileges;
+exit
+
+cd /var/www/html/
+wget https://packaging.moodle.org/stable405/moodle-latest-405.tgz
+tar -xvzf moodle-latest-405.tgz
+chown -R www-data:www-data /var/www
+chmod -R 755 /var/www
+
+wget https://repo.zabbix.com/zabbix/7.2/release/debian/pool/main/z/zabbix-release/zabbix-release_latest+debian12_all.deb
+dpkg -i zabbix-release_latest+debian12_all.deb 
+apt update 
+apt install zabbix-server-mysql zabbix-frontend-php zabbix-apache-conf zabbix-sql-scripts zabbix-agent -y
+
+mysql
+create database zabbix character set utf8mb4 collate utf8mb4_bin;
+create user zabbix@localhost identified by 'toor';
+grant all privileges on zabbix.* to zabbix@localhost;
+set global log_bin_trust_function_creators = 1;
+quit
+
+zcat /usr/share/zabbix/sql-scripts/mysql/server.sql.gz | mysql --default-character-set=utf8mb4 -uzabbix -p zabbix
+
+mysql
+set global log_bin_trust_function_creators = 0;
+quit
+
+/etc/zabbix/zabbix_server.conf 
+DBPassword=toor
+
+dpkg-reconfigure locales - RUS
+systemctl restart zabbix-server.service zabbix-agent.service apache2.service 
+systemctl enable zabbix-server.service zabbix-agent.service apache2.service 
+systemctl status zabbix-server.service 
+
+apt install cups -y
+usermod -aG lpadmin $(whoami)
+
+/etc/cups/cupsd.conf 
+port 631
+
+# Restrict access to the server...
+<Location />
+  Order allow,deny
+  Allow from all
+</Location>
+
+# Restrict access to the admin pages...
+<Location /admin>
+  Order allow,deny
+  Allow from all
+</Location>
+
+# Restrict access to configuration files...
+<Location /admin/conf>
+  AuthType Default
+  Require user @SYSTEM
+  Order allow,deny
+  Allow from all
+</Location>
+
+# Restrict access to log files...
+<Location /admin/log>
+  AuthType Default
+  Require user @SYSTEM
+  Order allow,deny
+  Allow from all
+</Location>
+
+systemctl restart cups
+apt install printer-driver-cups-pdf 

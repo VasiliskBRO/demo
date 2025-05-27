@@ -1,0 +1,91 @@
+/etc/network/interfaces
+auto ens192
+iface ens192 inet static
+address 20.1.1.2
+netmask 255.255.255.0
+gateway 20.1.1.1
+
+/etc/resolv.conf
+nameserver	10.1.1.2
+
+apt install chrony -y
+
+/etc/chrony/chrony.conf 
+#pool 2.debian.pool.ntp.org iburst
+server 10.1.1.2 iburst
+
+systemctl restart chrony
+
+установить яндекс браузер с сайта
+sudo dpkg -i /home/user/Downloads/Yandex.deb 
+apt --fix-broken install
+
+wget https://repo.zabbix.com/zabbix/7.2/release/debian/pool/main/z/zabbix-release/zabbix-release_latest_7.2+debian12_all.deb
+sudo dpkg -i zabbix-release_latest_7.2+debian12_all.deb
+apt update
+apt install zabbix-agent
+
+/etc/zabbix/zabbix_agentd.conf 
+Server=10.1.1.2
+
+systemctl restart zabbix-agent
+systemctl enable zabbix-agent
+Зайти на сайт http://mon.au-team.irpo/zabbix и настроить забикс
+Также зайти на сайт http://moodle.au-team.irpo/moodle и настроить там moodle 
+
+sudo apt install winbind libpam-winbind libnss-winbind krb5-config samba-dsdb-modules samba-vfs-modules -y
+
+mv /etc/samba/smb.conf /etc/samba/smb.conf.org
+
+/etc/samba/smb.conf
+[global]
+   kerberos method = secrets and keytab
+   workgroup = AU-TEAM
+   realm = AU-TEAM.IRPO
+   security = ads
+   winbind enum users = yes
+   winbind enum groups = yes
+   winbind use default domain = true
+   idmap config * : backend = autorid
+   idmap config * : range = 1000000-2000000 
+   template shell = /bin/bash
+   template homedir = /home/%D/%U
+
+testparm
+net ads join -U administrator -S BR-SRV.AU-TEAM.IRPO
+net ads testjoin
+systemctl restart winbind
+wbinfo -u
+wbinfo -g
+
+/etc/sudoers.d/hq
+%hq ALL=(ALL) NOPASSWD: /bin/cat, /bin/grep, /usr/bin/id
+admin ALL=(ALL) NOPASSWD: ALL
+
+apt install ssh
+systemctl enable ssh
+
+/etc/ssh/sshd_config
+PermitRootLogin yes
+
+systemctl restart ssh
+
+apt install nfs-common -y
+mkdir /mnt/nfs
+
+/etc/fstab
+hq-srv.au-team.irpo:/raid5/nfs /mnt/nfs nfs defaults 0 0
+
+reboot
+df -h
+
+/etc/cups/client.conf
+ServerName 10.1.1.2
+
+systemctl restart cups
+зайти на сайт https://10.1.1.2:631 и настроить там принтер 
+проверить его работоспособность
+
+зайти на сайт http://wiki.au-team.irpo:8080
+настроить wiki и скачать файл LocalSettings.php.
+scp -P 2025 LocalSettings.php sshuser@5.5.5.2:/home/sshuser/

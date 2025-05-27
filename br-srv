@@ -1,0 +1,154 @@
+/etc/network/interfaces
+auto ens192
+iface ens192 inet static
+address 5.5.5.2
+netmask 255.255.255.0
+gateway 5.5.5.1
+
+systemctl restart networking.service 
+
+/etc/resolv.conf 
+nameserver 10.1.1.2
+
+apt install chrony
+
+/etc/chrony/chrony.conf 
+#pool 2.debian.pool.ntp.org iburst
+server 10.1.1.2 iburst
+
+systemctl restart chrony
+timedatectl 
+cronyc sources
+
+wget https://repo.zabbix.com/zabbix/7.2/release/debian/pool/main/z/zabbix-release/zabbix-release_latest_7.2+debian12_all.deb
+dpkg -i zabbix-release_latest_7.2+debian12_all.deb 
+apt update 
+apt install zabbix-agent
+
+/etc/zabbix/zabbix-agentd.conf
+Server=10.1.1.2
+
+systemctl restart zabbix-agent.service 
+systemctl enable zabbix-agent.service 
+
+useradd -m -u 1010 -s /bin/bash sshuser
+passwd sshuser 
+apt install sudo -y
+
+/etc/sudoers
+sshuser ALL=(ALL) NOPASSWD: ALL
+
+apt install ssh
+
+/etc/ssh/sshd_config
+Port 2025
+AllowUsers sshuser
+Banner /etc/issue.net
+
+/etc/issue.net
+Authorized access only
+
+systemctl restart ssh
+
+apt install samba winbind libpam-winbind libnss-winbind libpam-krb5 krb5-config krb5-user krb5-kdc -y
+systemctl stop winbind.service smbd.service nmbd.service krb5-kdc
+systemctl mask winbind.service smbd.service nmbd.service krb5-kdc
+rm /etc/samba/smb.conf 
+samba-tool domain provision
+
+systemctl unmask samba-ad-dc
+systemctl restart samba-ad-dc
+systemctl status samba-ad-dc
+
+samba-tool user add admin 
+samba-tool group addmembers "Domain Admins" admin
+samba-tool group add hq
+samba-tool user add user1.hq P@ssw0rd
+samba-tool group addmembers hq user1.hq
+samba-tool user add user2.hq P@ssw0rd
+samba-tool group addmembers hq user2.hq
+samba-tool user add user3.hq P@ssw0rd
+samba-tool group addmembers hq user3.hq
+samba-tool user add user4.hq P@ssw0rd
+samba-tool group addmembers hq user4.hq
+samba-tool user add user5.hq P@ssw0rd
+samba-tool group addmembers hq user5.hq
+
+apt install pip sshpass -y
+pip3 install ansible==10.0.0a2 ansible-pylibssh --break-system-packages
+ssh-keygen -t rsa 
+ssh-copy-id -p 2025 sshuser@hq-srv.au-team.irpo
+ssh-copy-id root@hq-cli.au-team.irpo
+
+/etc/ssh_config
+    KexAlgorithms +diffie-hellman-group14-sha1
+    HostKeyAlgorithms +ssh-rsa
+
+ssh net_admin@hq-rtr.au-team.irpo
+ssh net_admin@br-rtr.au-team.irpo
+
+mkdir /etc/ansible
+
+/etc/ansible/hosts
+[HQ]
+HQ-SRV ansible_host=HQ-SRV.AU-TEAM.IRPO ansible_user=sshuser ansible_port=2025 ansible_python_interpreter=/usr/bin/python3
+HQ-CLI ansible_host=HQ-CLI.AU-TEAM.IRPO ansible_user=root ansible_python_interpreter=/usr/bin/python3
+HQ-RTR ansible_host=HQ-RTR.AU-TEAM.IRPO ansible_user=net_admin ansible_password=123 ansible_connection=network_cli ansible_network_os=cisco.ios.ios
+
+[BR]
+BR-RTR ansible_host=BR-RTR.AU-TEAM.IRPO ansible_user=net_admin ansible_password=123 ansible_connection=network_cli ansible_network_os=cisco.ios.ios
+
+ansible all -m ping
+
+apt install docker-compose -y
+
+/root/wiki.yml
+version : '3.8'
+services:
+  wiki:
+    image: mediawiki
+    container_name: wiki
+    ports:
+      - "8080:80"
+#    volumes:
+#      - ./LocalSettings.php:/var/www/html/LocalSettings.php
+    environment:
+      - MEDIAWIKI_DB_HOST=mariadb
+      - MEDIAWIKI_DB_USER=wiki
+      - MEDIAWIKI_DB_PASSWORD=WikiP@ssw0rd
+      - MEDIAWIKI_DB_NAME=mediawiki
+    depends_on:
+      - mariadb
+    networks:
+      my_custom_network:
+        ipv4_address: 10.10.1.2
+
+  mariadb:
+    image: mariadb
+    container_name: mariadb
+    environment:
+      - MYSQL_ROOT_PASSWORD=toor
+      - MYSQL_DATABASE=mediawiki
+      - MYSQL_USER=wiki
+      - MYSQL_PASSWORD=WikiP@ssw0rd
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      my_custom_network:
+        ipv4_address: 10.10.1.3
+
+volumes:
+  db_data:
+
+networks:
+  my_custom_network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.10.1.0/24
+
+docker-compose -f wiki.yml up -d
+
+mv /home/sshuser/LocalSettings.php /root/
+docker-compose -f wiki.yml down 
+docker-compose -f wiki.yml up -d
