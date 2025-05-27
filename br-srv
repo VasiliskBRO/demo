@@ -75,7 +75,7 @@ samba-tool user add user5.hq P@ssw0rd
 samba-tool group addmembers hq user5.hq
 
 apt install pip sshpass -y
-pip3 install ansible==10.0.0a2 ansible-pylibssh --break-system-packages
+pip install ansible==10.0.0a2 ansible-pylibssh --break-system-packages
 ssh-keygen -t rsa 
 ssh-copy-id -p 2025 sshuser@hq-srv.au-team.irpo
 ssh-copy-id root@hq-cli.au-team.irpo
