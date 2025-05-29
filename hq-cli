@@ -88,4 +88,4 @@ systemctl restart cups
 
 зайти на сайт http://wiki.au-team.irpo:8080
 настроить wiki и скачать файл LocalSettings.php.
-scp -P 2025 LocalSettings.php sshuser@5.5.5.2:/home/sshuser/
+scp -P 2025 /home/user/Downloads/LocalSettings.php sshuser@5.5.5.2:/home/sshuser/
