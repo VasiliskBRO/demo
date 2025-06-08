@@ -1,8 +1,7 @@
 /etc/network/interfaces
 auto ens192
 iface ens192 inet static
-address <ip hq-srv>
-netmask 255.255.255.0
+address <ip hq-srv>/<маска>
 gateway <ip hq-rtr>
 metric 0
 
