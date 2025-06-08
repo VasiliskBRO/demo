@@ -20,25 +20,12 @@ systemctl restart chrony
 timedatectl 
 cronyc sources
 
-wget https://repo.zabbix.com/zabbix/7.2/release/debian/pool/main/z/zabbix-release/zabbix-release_latest_7.2+debian12_all.deb
-dpkg -i zabbix-release_latest_7.2+debian12_all.deb 
-apt update 
-apt install zabbix-agent
-
-/etc/zabbix/zabbix-agentd.conf
-Server=<ip hq-srv>
-
-systemctl restart zabbix-agent.service 
-systemctl enable zabbix-agent.service 
-
 useradd -m -u 1010 -s /bin/bash sshuser
 passwd sshuser 
-apt install sudo -y
+apt install sudo ssh -y
 
 /etc/sudoers
 sshuser ALL=(ALL) NOPASSWD: ALL
-
-apt install ssh
 
 /etc/ssh/sshd_config
 Port <порт>
@@ -49,6 +36,17 @@ Banner /etc/issue.net
 Authorized access only
 
 systemctl restart ssh
+
+wget https://repo.zabbix.com/zabbix/7.2/release/debian/pool/main/z/zabbix-release/zabbix-release_latest_7.2+debian12_all.deb
+dpkg -i zabbix-release_latest_7.2+debian12_all.deb 
+apt update 
+apt install zabbix-agent
+
+/etc/zabbix/zabbix-agentd.conf
+Server=<ip hq-srv>
+
+systemctl restart zabbix-agent.service 
+systemctl enable zabbix-agent.service 
 
 apt install samba winbind libpam-winbind libnss-winbind libpam-krb5 krb5-config krb5-user krb5-kdc -y
 systemctl stop winbind.service smbd.service nmbd.service krb5-kdc
