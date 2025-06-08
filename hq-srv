@@ -3,7 +3,6 @@ auto ens192
 iface ens192 inet static
 address <ip hq-srv>/<маска>
 gateway <ip hq-rtr>
-metric 0
 
 /etc/resolv.conf
 nameserver	8.8.8.8
