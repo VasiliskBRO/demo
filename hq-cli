@@ -1,18 +1,18 @@
 /etc/network/interfaces
 auto ens192
 iface ens192 inet static
-address 20.1.1.2
+address <ip hq-cli>
 netmask 255.255.255.0
-gateway 20.1.1.1
+gateway <ip hq-rtr2>
 
 /etc/resolv.conf
-nameserver	10.1.1.2
+nameserver	<ip hq-srv>
 
 apt install chrony -y
 
 /etc/chrony/chrony.conf 
 #pool 2.debian.pool.ntp.org iburst
-server 10.1.1.2 iburst
+server <ip hq-srv> iburst
 
 systemctl restart chrony
 
@@ -26,12 +26,12 @@ apt update
 apt install zabbix-agent
 
 /etc/zabbix/zabbix_agentd.conf 
-Server=10.1.1.2
+Server=ip hq-srv>
 
 systemctl restart zabbix-agent
 systemctl enable zabbix-agent
-Зайти на сайт http://mon.au-team.irpo/zabbix и настроить забикс
-Также зайти на сайт http://moodle.au-team.irpo/moodle и настроить там moodle 
+Зайти на сайт http://mon.<домен>/zabbix и настроить забикс
+Также зайти на сайт http://moodle.<домен>/moodle и настроить там moodle 
 
 apt install ssh
 systemctl enable ssh
@@ -48,8 +48,8 @@ mv /etc/samba/smb.conf /etc/samba/smb.conf.org
 /etc/samba/smb.conf
 [global]
    kerberos method = secrets and keytab
-   workgroup = AU-TEAM
-   realm = AU-TEAM.IRPO
+   workgroup = <ПОЛУДОМЕН>
+   realm = <ДОМЕН>
    security = ads
    winbind enum users = yes
    winbind enum groups = yes
@@ -60,7 +60,7 @@ mv /etc/samba/smb.conf /etc/samba/smb.conf.org
    template homedir = /home/%D/%U
 
 testparm
-net ads join -U administrator -S BR-SRV.AU-TEAM.IRPO
+net ads join -U administrator -S br-srv.<домен>
 net ads testjoin
 systemctl restart winbind
 wbinfo -u
@@ -74,18 +74,18 @@ apt install nfs-common -y
 mkdir /mnt/nfs
 
 /etc/fstab
-hq-srv.au-team.irpo:/raid5/nfs /mnt/nfs nfs defaults 0 0
+hq-srv.<домен>:/raid5/nfs /mnt/nfs nfs defaults 0 0
 
 reboot
 df -h
 
 /etc/cups/client.conf
-ServerName 10.1.1.2
+ServerName <ip hq-srv>
 
 systemctl restart cups
-зайти на сайт https://10.1.1.2:631 и настроить там принтер 
+зайти на сайт https://<ip hq-srv>:631 и настроить там принтер 
 проверить его работоспособность
 
-зайти на сайт http://wiki.au-team.irpo:8080
+зайти на сайт http://wiki.<домен>:8080
 настроить wiki и скачать файл LocalSettings.php.
-scp -P 2025 /home/user/Downloads/LocalSettings.php sshuser@5.5.5.2:/home/sshuser/
+scp -P <порт> /home/user/Downloads/LocalSettings.php sshuser@br-srv.<домен>:/home/sshuser/
