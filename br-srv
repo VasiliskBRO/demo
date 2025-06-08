@@ -1,8 +1,7 @@
 /etc/network/interfaces
 auto ens192
 iface ens192 inet static
-address <ip br-srv>
-netmask 255.255.255.0
+address <ip br-srv>/<маска>
 gateway <ip br-rtr>
 
 systemctl restart networking.service 
