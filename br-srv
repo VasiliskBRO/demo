@@ -1,20 +1,20 @@
 /etc/network/interfaces
 auto ens192
 iface ens192 inet static
-address 5.5.5.2
+address <ip br-srv>
 netmask 255.255.255.0
-gateway 5.5.5.1
+gateway <ip br-rtr>
 
 systemctl restart networking.service 
 
 /etc/resolv.conf 
-nameserver 10.1.1.2
+nameserver <ip hq-srv>
 
 apt install chrony
 
 /etc/chrony/chrony.conf 
 #pool 2.debian.pool.ntp.org iburst
-server 10.1.1.2 iburst
+server <ip hq-srv> iburst
 
 systemctl restart chrony
 timedatectl 
@@ -26,7 +26,7 @@ apt update
 apt install zabbix-agent
 
 /etc/zabbix/zabbix-agentd.conf
-Server=10.1.1.2
+Server=<ip hq-srv>
 
 systemctl restart zabbix-agent.service 
 systemctl enable zabbix-agent.service 
@@ -41,7 +41,7 @@ sshuser ALL=(ALL) NOPASSWD: ALL
 apt install ssh
 
 /etc/ssh/sshd_config
-Port 2025
+Port <порт>
 AllowUsers sshuser
 Banner /etc/issue.net
 
@@ -77,26 +77,26 @@ samba-tool group addmembers hq user5.hq
 apt install pip sshpass -y
 pip install ansible==10.0.0a2 ansible-pylibssh --break-system-packages
 ssh-keygen -t rsa 
-ssh-copy-id -p 2025 sshuser@hq-srv.au-team.irpo
-ssh-copy-id root@hq-cli.au-team.irpo
+ssh-copy-id -p <порт> sshuser@hq-srv.<домен>
+ssh-copy-id root@hq-cli.<домен>
 
 /etc/ssh/ssh_config
     KexAlgorithms +diffie-hellman-group14-sha1
     HostKeyAlgorithms +ssh-rsa
 
-ssh net_admin@hq-rtr.au-team.irpo
-ssh net_admin@br-rtr.au-team.irpo
+ssh net_admin@hq-rtr.<домен>
+ssh net_admin@br-rtr.<домен>
 
 mkdir /etc/ansible
 
 /etc/ansible/hosts
 [HQ]
-HQ-SRV ansible_host=HQ-SRV.AU-TEAM.IRPO ansible_user=sshuser ansible_port=2025 ansible_python_interpreter=/usr/bin/python3
-HQ-CLI ansible_host=HQ-CLI.AU-TEAM.IRPO ansible_user=root ansible_python_interpreter=/usr/bin/python3
-HQ-RTR ansible_host=HQ-RTR.AU-TEAM.IRPO ansible_user=net_admin ansible_password=123 ansible_connection=network_cli ansible_network_os=cisco.ios.ios
+HQ-SRV ansible_host=HQ-SRV.<ДОМЕН> ansible_user=sshuser ansible_port=<порт> ansible_python_interpreter=/usr/bin/python3
+HQ-CLI ansible_host=HQ-CLI.<ДОМЕН> ansible_user=root ansible_python_interpreter=/usr/bin/python3
+HQ-RTR ansible_host=HQ-RTR.<ДОМЕН> ansible_user=net_admin ansible_password=<пароль> ansible_connection=network_cli ansible_network_os=cisco.ios.ios
 
 [BR]
-BR-RTR ansible_host=BR-RTR.AU-TEAM.IRPO ansible_user=net_admin ansible_password=123 ansible_connection=network_cli ansible_network_os=cisco.ios.ios
+BR-RTR ansible_host=BR-RTR.<ДОМЕН> ansible_user=net_admin ansible_password=<пароль> ansible_connection=network_cli ansible_network_os=cisco.ios.ios
 
 ansible all -m ping
 
